@@ -33,8 +33,7 @@
     .wordmark { font-size: 21px; font-weight: 780; letter-spacing: -.05em; line-height: 1; white-space: nowrap; }
     .hero {
       min-height: 100svh; display: flex; flex-direction: column;
-      gap: clamp(48px, 7svh, 80px);
-      justify-content: space-between;
+      gap: clamp(32px, 4svh, 48px);
       padding: clamp(116px, 14svh, 170px) var(--gut) clamp(40px, 6svh, 68px);
     }
     h1 {
@@ -118,7 +117,7 @@
       .hero__cat { margin-top: 16px; font-size: 17px; }
     }
     @media (min-height: 900px) and (max-width: 600px) {
-      .hero { padding-top: 140px; gap: 82px; }
+      .hero { padding-top: 140px; gap: 40px; }
       .hero__sub { font-size: 26px; }
       .hero__cat { margin-top: 38px; font-size: 22px; }
     }
