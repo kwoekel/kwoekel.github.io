@@ -14,7 +14,7 @@
       --ink: #1b1b1c;
       --quiet: #646465;
       --sulfur: #d2ff00;
-      --mint: #297d6a;
+      --mint: #00a586;
       --gut: clamp(20px, 5vw, 72px);
     }
     * { box-sizing: border-box; }
@@ -32,35 +32,57 @@
     }
     .wordmark { font-size: 21px; font-weight: 780; letter-spacing: -.05em; line-height: 1; white-space: nowrap; }
     .hero {
-      min-height: 100svh;
-      padding: clamp(124px, 16svh, 170px) var(--gut) 40px;
+      min-height: 100svh; display: grid; grid-template-rows: auto 1fr;
+      padding: clamp(124px, 16svh, 170px) var(--gut) clamp(40px, 7svh, 68px);
     }
     h1 {
       max-width: 1460px; margin: 0 0 28px;
       font-size: clamp(55px, 9.5vw, 142px); font-weight: 490;
       line-height: .88; letter-spacing: -.07em; text-wrap: balance;
     }
-    .glue { position: relative; z-index: 0; white-space: nowrap; }
+    .glue {
+      position: relative; z-index: 0; display: inline-block; white-space: nowrap;
+      animation: glue-rise 1s .15s cubic-bezier(.19, 1, .22, 1) both;
+    }
+    @keyframes glue-rise {
+      from { opacity: 0; transform: translateY(.6em) scale(.94); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
     .glue::after {
       content: ""; position: absolute; z-index: -1; left: -.02em; right: -.04em;
       bottom: .05em; height: .19em; background: var(--sulfur);
-      transform: scaleX(0); transform-origin: left;
-      animation: underline-in .75s .35s cubic-bezier(.19, 1, .22, 1) both;
+      transform: scaleX(0); transform-origin: left center;
+      animation: underline-in 1.05s .75s cubic-bezier(.19, 1, .22, 1) both;
     }
-    @keyframes underline-in { to { transform: scaleX(1); } }
-    .hero__lower { max-width: 760px; }
-    .hero__sub { margin: 0; font-size: clamp(17px, 1.4vw, 21px); line-height: 1.4; color: var(--quiet); }
+    @keyframes underline-in {
+      0% { transform: scaleX(0) scaleY(.5); }
+      75% { transform: scaleX(1.06) scaleY(1.15); }
+      100% { transform: scaleX(1) scaleY(1); }
+    }
+    .hero__lower { max-width: 760px; align-self: end; }
+    .hero__sub { margin: 0; font-size: clamp(19px, 2vw, 23px); line-height: 1.4; color: var(--quiet); }
     .hero__sub strong {
-      display: block; color: var(--mint); font-weight: 700;
-      animation: swipe-in .85s .55s cubic-bezier(.19, 1, .22, 1) both;
+      position: relative; display: block; overflow: hidden;
+      color: var(--mint); font-weight: 700;
     }
-    @keyframes swipe-in {
-      from { opacity: 0; clip-path: inset(0 100% 0 0); transform: translateX(-16px); }
-      to { opacity: 1; clip-path: inset(0); transform: translateX(0); }
+    .hero__sub strong span { display: block; animation: phrase-reveal 1.1s .6s both; }
+    .hero__sub strong::after {
+      content: ""; position: absolute; z-index: 1; inset: 0;
+      background: var(--sulfur); transform: translateX(-101%);
+      animation: sulfur-swipe 1.1s .6s ease-in-out both;
+    }
+    @keyframes phrase-reveal {
+      0%, 44% { opacity: 0; }
+      45%, 100% { opacity: 1; }
+    }
+    @keyframes sulfur-swipe {
+      0% { transform: translateX(-101%); }
+      45% { transform: translateX(0); }
+      100% { transform: translateX(101%); }
     }
     .hero__cat {
       display: flex; align-items: center; gap: 12px; margin: 22px 0 0;
-      font-size: 14px; font-weight: 760; letter-spacing: .06em; text-transform: uppercase;
+      font-size: 16px; font-weight: 760; letter-spacing: .045em; text-transform: uppercase;
     }
     .hero__cat::before { content: ""; width: 28px; height: 8px; flex: none; background: var(--sulfur); }
     .button {
@@ -75,6 +97,7 @@
       .wordmark { font-size: 18px; }
       .hero { padding-top: 118px; }
       h1 { margin-bottom: 24px; font-size: clamp(49px, 12.6vw, 70px); line-height: .91; }
+      .hero__lower { align-self: center; }
       .hero__sub { font-size: 19px; line-height: 1.35; }
       .hero__cat {
         margin-top: 24px; font-size: 17px; line-height: 1.3;
@@ -82,7 +105,8 @@
       }
     }
     @media (prefers-reduced-motion: reduce) {
-      .glue::after, .hero__sub strong { animation: none; transform: none; clip-path: none; opacity: 1; }
+      .glue, .glue::after, .hero__sub strong span { animation: none; transform: none; opacity: 1; }
+      .hero__sub strong::after { display: none; }
     }
   </style>
 </head>
@@ -94,7 +118,7 @@
   <main class="hero" aria-label="Introduction">
     <h1>Your business shouldn't need you to be the <span class="glue">glue.</span></h1>
     <div class="hero__lower">
-      <p class="hero__sub">Automation that takes the mental load off your plate — <strong>built for anyone drowning in the doing.</strong></p>
+      <p class="hero__sub">Automation that takes the mental load off your plate — <strong><span>built for anyone drowning in the doing.</span></strong></p>
       <p class="hero__cat">AI systems that make running a business feel lighter.</p>
     </div>
   </main>
