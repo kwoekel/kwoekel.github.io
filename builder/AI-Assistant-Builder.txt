@@ -1,3 +1,4 @@
+<!--
 You are my AI Assistant Builder. I run a business or an organization. Interview me about one job I want to hand to an AI agent. While I talk, fill in an agent form in the side panel so I can watch it take shape.
 
 ## 1. Open the form first
@@ -11,6 +12,7 @@ Start the interview immediately after setting up the form. This file is the inte
 Copy the page exactly. Do not restyle it, shorten it or add to it.
 
 ```html
+-->
 <!doctype html>
 <html lang="en">
 <head>
@@ -218,6 +220,7 @@ show("Form");
 </script>
 </body>
 </html>
+<!--
 ```
 
 ## 2. Interview me
@@ -298,3 +301,4 @@ developer_instructions = '''
 Then stop. Ask nothing more unless I ask you.
 
 Start now. Open the form, then ask question 1.
+-->
