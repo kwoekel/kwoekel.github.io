@@ -39,6 +39,10 @@ dt{color:#5b6475}
 dd{margin:0;white-space:pre-wrap}
 ul,ol{margin:0;padding-left:18px}
 .blank{min-height:34px;border:1px solid #e3e6ec;border-radius:8px;background:#fafaf7}
+dd.filled{border:1px solid #e3e6ec;border-radius:8px;background:#fff;padding:6px 10px;line-height:1.4}
+.tip{background:#eef6f1;border:1px solid #cfe6d8;color:#1d4d37;border-radius:12px;padding:10px 14px;margin:0 0 14px;font-size:14px;transition:background .3s}
+.tip.flash{background:#d6efe0}
+.card h3{font-size:15px;margin:0 0 2px}
 textarea.blank{display:block;width:100%;font:inherit;color:inherit;padding:6px 10px;line-height:1.4;resize:vertical;overflow:hidden}
 textarea.blank:focus{outline:2px solid #2f7d5b;background:#fff}
 pre{background:#fff;border:1px solid #e3e6ec;border-radius:14px;padding:16px;white-space:pre-wrap;font:13px/1.55 ui-monospace,Menlo,Consolas,monospace;margin:0 0 12px}
@@ -59,6 +63,7 @@ label{display:flex;gap:10px;align-items:flex-start}
 /* DATA START */
 const DATA = {
   "answered": 0,
+  "finished": false,
   "name": "",
   "description": "",
   "model": "inherit",
@@ -122,13 +127,7 @@ const CARDS = [
   ["Access and checks", [["It may use", "may"], ["It asks you before", "askFirst"], ["When unsure", "unsure"], ["It hands back", "output"]]]
 ];
 const LISTS = new Set(["knows", "missing", "steps", "always", "never", "may", "askFirst"]);
-const STORE = "agent-form-edits";
-function loadEdits() {
-  try { const s = JSON.parse(localStorage.getItem(STORE)); if (s && s.a <= DATA.answered) return s.v; } catch (e) {}
-  return {};
-}
-const mine = loadEdits();
-const saveEdits = () => { try { localStorage.setItem(STORE, JSON.stringify({ a: DATA.answered, v: mine })); } catch (e) {} };
+const mine = {};
 const merged = () => Object.assign({}, DATA, mine);
 const grow = t => { t.style.height = "auto"; t.style.height = (t.scrollHeight + 2) + "px"; };
 let current = "Form";
@@ -141,22 +140,24 @@ function fill(dd, v, key, editable) {
     ta.oninput = () => {
       const t = ta.value;
       if (t.trim() === "") delete mine[key]; else mine[key] = LISTS.has(key) ? t.split("\n").map(x => x.trim()).filter(Boolean) : t;
-      saveEdits(); grow(ta);
+      grow(ta);
     };
     ta.onchange = () => { if (ta.value.trim() === "") show(current); };
     dd.append(ta);
     return;
   }
   if (!has(v)) { dd.className = "blank"; return; }
+  dd.className = "filled";
   if (!Array.isArray(v)) { dd.textContent = v; return; }
   const list = el(key === "steps" ? "ol" : "ul");
   v.forEach(x => list.append(el("li", x)));
   dd.append(list);
 }
+function flashTip() { const t = $("tip"); if (!t) return; t.classList.add("flash"); t.scrollIntoView({ behavior: "smooth", block: "nearest" }); setTimeout(() => t.classList.remove("flash"), 900); }
 function cards(D, into, editable) {
   CARDS.forEach(([title, rows]) => {
     const c = el("section", "", "card"), dl = el("dl");
-    rows.forEach(([label, key]) => { const dd = el("dd"); fill(dd, D[key], key, editable); dl.append(el("dt", label), dd); });
+    rows.forEach(([label, key]) => { const dd = el("dd"); fill(dd, D[key], key, editable); if (!editable && into === $("panel") && current === "Form") dd.onclick = flashTip; dl.append(el("dt", label), dd); });
     c.append(el("h2", title), dl); into.append(c);
   });
 }
@@ -197,30 +198,33 @@ async function copy(text, btn, done) {
   setTimeout(() => { btn.textContent = label; }, 2500);
 }
 let kind = Object.keys(IDEAS)[0];
-const checkedItems = new Set();
 const VIEWS = {
-  "Form": p => cards(merged(), p, true),
+  "Form": p => {
+    const tip = el("p", "", "tip"); tip.id = "tip";
+    tip.textContent = DATA.finished
+      ? "Your form is ready. Click any box to change the wording. Then open Agent file and copy it. It includes your changes."
+      : "Answer in the chat. Claude fills in this form as you go. To change a box, tell Claude in the chat, for example: \u201cChange the voice to warm and friendly.\u201d";
+    p.append(tip);
+    if (DATA.finished) cards(merged(), p, true); else cards(DATA, p, false);
+  },
   "Job ideas": p => {
-    p.append(el("p", "Stuck on which job to hand off? Pick your kind of work, then tap an idea. It copies a sentence to paste into the chat.", "note"));
+    p.append(el("p", "Stuck on which job to hand off? Pick your kind of work, then tap an idea. It copies a sentence. Paste it into the chat and send it.", "note"));
     const chips = el("div", "", "chips");
     Object.keys(IDEAS).forEach(k => { const b = el("button", k); b.setAttribute("aria-pressed", String(k === kind)); b.onclick = () => { kind = k; show("Job ideas"); }; chips.append(b); });
     p.append(chips);
     IDEAS[kind].forEach(([name, what]) => {
       const b = el("button", "", "card"); b.append(el("h2", name), el("span", "I want an agent to " + what + "."));
-      b.onclick = () => copy("My kind of work: " + kind + ". I want an agent to " + what + ".", b.lastChild, "Copied. Paste it into the chat.");
+      b.onclick = () => copy("My kind of work: " + kind + ". I want an agent to " + what + ".", b.lastChild, "Copied. Paste it into the chat and send it.");
       p.append(b);
     });
   },
   "Example": p => { p.append(el("p", "A filled-in form for a small bookkeeping firm. Yours will look like this when you finish.", "note")); cards(EXAMPLE, p); },
   "Checklist": p => {
-    p.append(el("p", "Six kinds of information an agent needs. Tick what you already have in writing. The rest is your list to gather.", "note"));
+    p.append(el("p", "Six kinds of information an agent needs. Claude asks about these in question 3. Tell Claude which ones you have in writing. The rest goes on your \u201cStill to gather\u201d list in the form.", "note"));
     INFO.forEach(([name, what, where]) => {
-      const c = el("section", "", "card"), l = el("label"), box = el("input"), d = el("div");
-      box.type = "checkbox";
-      box.checked = checkedItems.has(name);
-      box.onchange = () => box.checked ? checkedItems.add(name) : checkedItems.delete(name);
-      d.append(el("h2", name), el("div", what), el("div", "Where to find it: " + where, "note"));
-      l.append(box, d); c.append(l); p.append(c);
+      const c = el("section", "", "card");
+      c.append(el("h2", name), el("div", what), el("div", "Where to find it: " + where, "note"));
+      p.append(c);
     });
   },
   "Test it": p => {
@@ -231,12 +235,13 @@ const VIEWS = {
     const text = fileText(merged()), b = el("button", "Copy agent file");
     b.onclick = () => copy(text, b, "Copied");
     const tabs = el("div", "", "tabs"); tabs.append(b);
+    p.append(el("p", DATA.finished ? (Object.keys(mine).length ? "This file includes the changes you typed in the form." : "Your agent file. Copy it, or use the file Claude made in the chat.") : "This fills in as you answer. It is ready when you finish the interview.", "tip"));
     p.append(tabs, el("pre", text), el("p", "ChatGPT or Claude: create a Project and paste everything below the second --- line into the project instructions. Claude Code: save the whole file as .claude/agents/" + slug(merged().name) + ".md", "note"));
   }
 };
 function show(name) {
   const n = Math.min(DATA.answered, TOTAL);
-  $("sub").textContent = n >= TOTAL ? "All five questions answered. Open the Agent file tab." : n + " of " + TOTAL + " questions answered. This fills in as you talk. Click any box to type your own words.";
+  $("sub").textContent = DATA.finished ? "Finished. Fine-tune any box, then copy your agent file." : n >= TOTAL ? "All five questions answered. Next, Claude asks you to name your agent." : n + " of " + TOTAL + " questions answered.";
   $("bar").style.width = (n / TOTAL * 100) + "%";
   current = name;
   const tabs = $("tabs"), p = $("panel"); tabs.textContent = ""; p.textContent = "";
@@ -280,7 +285,8 @@ After each answer, update the same artifact or preview before replying. If the p
 - Set `"answered"` to the number of the last question you asked that I have answered. A question I answered only in part, before you asked it, does not count yet.
 - Sort what I say into the right fields, even when I say it out of order.
 - Rewrite my words to be short and specific. Use one idea for each list item, about 12 words or fewer. Use a maximum of six items in a list. Keep each text field to one sentence. Write instructions as commands, such as "List what is included."
-- I may type in the form boxes myself. The page keeps my edits when you update it, but you cannot see them. Change only the fields my latest answer covers. Never rewrite a field you already filled unless I ask you to correct it.
+- Change only the fields my latest answer covers. Never rewrite a field you already filled unless I ask you to correct it. If I ask to change a box, update only that field.
+- Keep `"finished"` as `false` until step 4.
 - Use only what I told you. Do not invent prices, policies, names or steps. Leave a field empty until I give you something for it.
 
 What goes in each field:
@@ -309,8 +315,8 @@ What goes in each field:
 
 When all five questions are answered:
 
-1. Ask me one last question: "What do you want to call your agent?" Suggest the name in the form. Put my answer in `name` and update the form.
-2. Ask me: "Did you change anything in the form yourself?" If yes, tell me to open the **Agent file** tab and tap **Copy agent file**, because that text includes my edits, and skip the rest of this step. If no, create my agent file as a file I can download. Name the file with the agent name in lowercase, with hyphens between words. If you cannot create files here, give me the same text in one copyable block and tell me the file name to save it as.
+1. Ask me one last question: "What do you want to call your agent?" Suggest the name in the form. Put my answer in `name`, set `"finished"` to `true` and update the form. This unlocks the form so I can type in its boxes.
+2. Create my agent file as a file I can download. Name the file with the agent name in lowercase, with hyphens between words. If you cannot create files here, give me the same text in one copyable block and tell me the file name to save it as.
    - In Claude, make a `.md` file, such as `quote-drafter.md`. Its text must match the form's **Agent file** tab exactly, so build it the way the page's `fileText` function does.
    - In ChatGPT or Codex, make a `.toml` file, such as `quote-drafter.toml`, in the Codex custom agent format below. Use the agent name in lowercase with underscores for `name`. Put the agent file body in `developer_instructions`: everything that the page's `fileText` function writes below the second `---` line. Leave out `model`, so the agent uses the session's model.
 
@@ -324,10 +330,11 @@ developer_instructions = '''
 ```
 
 3. Tell me how to use the file, in two short lines. For a `.md` file: in Claude Code, save it in the `.claude/agents/` folder; in a Claude Project, paste everything below the second `---` line into the project instructions. For a `.toml` file: in Codex, save it in `~/.codex/agents/` for all projects or in a project's `.codex/agents/` folder; in a ChatGPT Project, paste the `developer_instructions` text into the project instructions.
-4. Read me the "Still to gather" list. An agent is only as good as the information it can read. With the form open, point me to **Checklist** and **Test it**. In chat-only mode, list the four tests briefly.
-5. Tell me one thing: "One agent is a start. Kierra Woekel helps businesses find every place AI fits, gather what it needs to know and connect the tools. Bring this form to a call with her."
+4. Tell me in one sentence: "You can now click any box in the form to fine-tune the wording. If you do, copy your agent file from the form's Agent file tab, because it includes your changes."
+5. Read me the "Still to gather" list. An agent is only as good as the information it can read. With the form open, point me to **Checklist** and **Test it**. In chat-only mode, list the four tests briefly.
+6. Tell me one thing: "One agent is a start. Kierra Woekel helps businesses find every place AI fits, gather what it needs to know and connect the tools. Bring this form to a call with her."
 
-Then stop. Ask nothing more unless I ask you.
+Then stop. Ask nothing more unless I ask you. Do not update the form again unless I ask. If I ask, first warn me that an update replaces any wording I typed in the form, and ask me to paste my changes into the chat.
 
 Start now. Open the form, then ask question 1.
 -->
