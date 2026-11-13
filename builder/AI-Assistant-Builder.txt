@@ -9,9 +9,7 @@ Start the interview immediately after setting up the form. This file is the inte
 - In ChatGPT, use a native, editable HTML preview beside the conversation if this session exposes one. In Codex, use the in-app browser panel only if this session can serve the HTML and open the preview successfully. Merely writing a file or showing a code block does not open the form.
 - If a side-panel preview is unavailable or fails, say: “For the live form beside the chat, use this prompt in Claude with Artifacts. You can also finish the interview here.” Ask question 1 in the same reply. Keep a short text version of the form at the end of each reply and return the finished agent instructions in chat.
 
-Copy the page exactly. Do not restyle it, shorten it or add to it.
-
-```html
+The page is everything from the `<!doctype html>` line through the `</html>` line, after this comment. Copy it exactly, starting at `<!doctype html>`. Do not restyle it, shorten it or add to it.
 -->
 <!doctype html>
 <html lang="en">
@@ -139,7 +137,8 @@ function fill(dd, v, key, editable) {
     ta.value = Array.isArray(v) ? v.join("\n") : String(v || "");
     ta.oninput = () => {
       const t = ta.value;
-      if (t.trim() === "") delete mine[key]; else mine[key] = LISTS.has(key) ? t.split("\n").map(x => x.trim()).filter(Boolean) : t;
+      const nv = LISTS.has(key) ? t.split("\n").map(x => x.trim()).filter(Boolean) : t;
+      if (t.trim() === "" || JSON.stringify(nv) === JSON.stringify(DATA[key])) delete mine[key]; else mine[key] = nv;
       grow(ta);
     };
     ta.onchange = () => { if (ta.value.trim() === "") show(current); };
@@ -254,7 +253,6 @@ show("Form");
 </body>
 </html>
 <!--
-```
 
 ## 2. Interview me
 
@@ -263,8 +261,10 @@ Ask these five questions in order, one at a time. Use plain words. Tell me I can
 1. **The job.** What does your business do? What is one job you or your team do again and again that you would hand off?
 2. **The last time.** Walk me through the last time you did that job. What started it? What did you have in front of you? What did you have at the end?
 3. **What it needs to know.** What would a new hire need to read or be told before they could do this job? Where does each thing live today: a file, an inbox, a drive or someone's head?
-4. **Doing it well.** What steps do you follow? What does a good result always have? What must never happen? How should it sound?
+4. **Doing it well.** What steps do you follow? What does a good result always have? What must never happen? How should it sound? What should the finished result look like, and how long should it be?
 5. **Access and checks.** What may the agent open or use? What must come back to you before anyone uses it? What should it do when it is not sure?
+
+Which fields each question fills: 1 fills `name`, `description` and `role`. 2 fills `starts`, `input` and `done`. 3 fills `knows` and `missing`. 4 fills `steps`, `always`, `never`, `voice` and `output`. 5 fills `may`, `askFirst`, `unsure` and `tools`.
 
 Rules for the interview:
 
@@ -272,7 +272,7 @@ Rules for the interview:
 - If I cannot think of a job, point me to **Job ideas** and **Example** when the form is open. In chat-only mode, suggest up to three jobs from the examples that suit my business.
 - If my job is too big, such as "run my marketing," help me pick one piece of it.
 - If an answer leaves a field for that question empty, ask one short follow-up. Ask no more than one follow-up for each question.
-- Keep each reply to three sentences or fewer, plus the next question. The form holds the detail, so do not repeat it in chat.
+- Keep each reply to three sentences or fewer, plus the next question. Your first reply is the exception: it also tells me I can brain dump, asks me not to share private details and asks question 1. The form holds the detail, so do not repeat it in chat.
 - Ask me not to share passwords, card numbers, health details or private customer information.
 
 ## 3. Fill in the form after every answer
@@ -309,7 +309,7 @@ What goes in each field:
 | `may` | What the agent may read or draft |
 | `askFirst` | What must come back to me first. If I name nothing, use "Sending anything" and "Prices, dates and promises" |
 | `unsure` | What it does when it is not sure. If I do not say, use "Ask one clear question before drafting" |
-| `output` | What it hands back: the format and the length |
+| `output` | What it hands back: the format and the length. If I do not say, use "A short draft for me to check before it is used" |
 
 ## 4. Name the agent and hand over the file
 
