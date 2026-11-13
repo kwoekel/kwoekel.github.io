@@ -115,14 +115,13 @@ const el = (tag, text, cls) => { const e = document.createElement(tag); if (text
 const has = v => Array.isArray(v) ? v.length > 0 : String(v || "").trim() !== "";
 const slug = s => String(s).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "my-agent";
 const CARDS = [
-  ["Settings", [["Agent name", "name"], ["When to use it", "description"], ["Model", "model"], ["Access (tools)", "tools"]]],
+  ["Settings", [["Agent name", "name"], ["When to use it", "description"]]],
   ["The job", [["Role", "role"], ["It starts when", "starts"], ["You give it", "input"], ["It is done when", "done"]]],
   ["What it needs to know", [["You have", "knows"], ["Still to gather", "missing"]]],
   ["How to do it well", [["Steps", "steps"], ["Always", "always"], ["Never", "never"], ["Voice", "voice"]]],
   ["Access and checks", [["It may use", "may"], ["It asks you before", "askFirst"], ["When unsure", "unsure"], ["It hands back", "output"]]]
 ];
-const HINT = { "inherit": "inherit (it uses the model your tool is set to)", "Read, Grep, Glob": "Read, Grep, Glob (it can read files; it cannot change or send anything)" };
-const LISTS = new Set(["knows", "missing", "steps", "always", "never", "may", "askFirst"]), FIXED = new Set(["model", "tools"]);
+const LISTS = new Set(["knows", "missing", "steps", "always", "never", "may", "askFirst"]);
 const STORE = "agent-form-edits";
 function loadEdits() {
   try { const s = JSON.parse(localStorage.getItem(STORE)); if (s && s.a <= DATA.answered) return s.v; } catch (e) {}
@@ -134,7 +133,7 @@ const merged = () => Object.assign({}, DATA, mine);
 const grow = t => { t.style.height = "auto"; t.style.height = (t.scrollHeight + 2) + "px"; };
 let current = "Form";
 function fill(dd, v, key, editable) {
-  if (editable && !FIXED.has(key)) {
+  if (editable) {
     const ta = el("textarea", "", "blank");
     ta.rows = 1;
     ta.setAttribute("aria-label", key);
@@ -149,7 +148,7 @@ function fill(dd, v, key, editable) {
     return;
   }
   if (!has(v)) { dd.className = "blank"; return; }
-  if (!Array.isArray(v)) { dd.textContent = HINT[v] || v; return; }
+  if (!Array.isArray(v)) { dd.textContent = v; return; }
   const list = el(key === "steps" ? "ol" : "ul");
   v.forEach(x => list.append(el("li", x)));
   dd.append(list);
@@ -290,8 +289,8 @@ What goes in each field:
 | --- | --- |
 | `name` | Two or three plain words for the job, such as "Quote Drafter". I choose the final name at the end |
 | `description` | One sentence that says what the agent does and when to use it. Start with "Use when" |
-| `model` | Keep `inherit`. It means the agent uses the model my tool is set to |
-| `tools` | Keep `Read, Grep, Glob`. It means the agent can read files and cannot change or send anything. Change it only if I ask for more access, and tell me what the change allows |
+| `model` | Not shown in the form. Keep `inherit` |
+| `tools` | Not shown in the form. Pick it from what I say the agent may use, in my plain words. Keep `Read, Grep, Glob` when it only needs to read my files and draft. Add `Edit, Write` only if I want it to change or save files, `WebSearch, WebFetch` only if I want it to look things up online, and `Bash` only if I want it to run commands. Never say these tool names in chat. Say what the agent can and cannot do in plain words, such as "It can read your files. It cannot change or send anything." |
 | `role` | One sentence: who the agent is and what it does for the business |
 | `starts` | What starts the job |
 | `input` | What I give the agent each time |
