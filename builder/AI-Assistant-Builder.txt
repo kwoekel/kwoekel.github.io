@@ -39,6 +39,8 @@ dt{color:#5b6475}
 dd{margin:0;white-space:pre-wrap}
 ul,ol{margin:0;padding-left:18px}
 .blank{min-height:34px;border:1px solid #e3e6ec;border-radius:8px;background:#fafaf7}
+textarea.blank{display:block;width:100%;font:inherit;color:inherit;padding:6px 10px;line-height:1.4;resize:vertical;overflow:hidden}
+textarea.blank:focus{outline:2px solid #2f7d5b;background:#fff}
 pre{background:#fff;border:1px solid #e3e6ec;border-radius:14px;padding:16px;white-space:pre-wrap;font:13px/1.55 ui-monospace,Menlo,Consolas,monospace;margin:0 0 12px}
 .note{color:#5b6475;font-size:13px;margin:0 0 12px}
 label{display:flex;gap:10px;align-items:flex-start}
@@ -120,17 +122,42 @@ const CARDS = [
   ["Access and checks", [["It may use", "may"], ["It asks you before", "askFirst"], ["When unsure", "unsure"], ["It hands back", "output"]]]
 ];
 const HINT = { "inherit": "inherit (it uses the model your tool is set to)", "Read, Grep, Glob": "Read, Grep, Glob (it can read files; it cannot change or send anything)" };
-function fill(dd, v, key) {
+const LISTS = new Set(["knows", "missing", "steps", "always", "never", "may", "askFirst"]), FIXED = new Set(["model", "tools"]);
+const STORE = "agent-form-edits";
+function loadEdits() {
+  try { const s = JSON.parse(localStorage.getItem(STORE)); if (s && s.a <= DATA.answered) return s.v; } catch (e) {}
+  return {};
+}
+const mine = loadEdits();
+const saveEdits = () => { try { localStorage.setItem(STORE, JSON.stringify({ a: DATA.answered, v: mine })); } catch (e) {} };
+const merged = () => Object.assign({}, DATA, mine);
+const grow = t => { t.style.height = "auto"; t.style.height = (t.scrollHeight + 2) + "px"; };
+let current = "Form";
+function fill(dd, v, key, editable) {
+  if (editable && !FIXED.has(key)) {
+    const ta = el("textarea", "", "blank");
+    ta.rows = 1;
+    ta.setAttribute("aria-label", key);
+    ta.value = Array.isArray(v) ? v.join("\n") : String(v || "");
+    ta.oninput = () => {
+      const t = ta.value;
+      if (t.trim() === "") delete mine[key]; else mine[key] = LISTS.has(key) ? t.split("\n").map(x => x.trim()).filter(Boolean) : t;
+      saveEdits(); grow(ta);
+    };
+    ta.onchange = () => { if (ta.value.trim() === "") show(current); };
+    dd.append(ta);
+    return;
+  }
   if (!has(v)) { dd.className = "blank"; return; }
   if (!Array.isArray(v)) { dd.textContent = HINT[v] || v; return; }
   const list = el(key === "steps" ? "ol" : "ul");
   v.forEach(x => list.append(el("li", x)));
   dd.append(list);
 }
-function cards(D, into) {
+function cards(D, into, editable) {
   CARDS.forEach(([title, rows]) => {
     const c = el("section", "", "card"), dl = el("dl");
-    rows.forEach(([label, key]) => { const dd = el("dd"); fill(dd, D[key], key); dl.append(el("dt", label), dd); });
+    rows.forEach(([label, key]) => { const dd = el("dd"); fill(dd, D[key], key, editable); dl.append(el("dt", label), dd); });
     c.append(el("h2", title), dl); into.append(c);
   });
 }
@@ -173,7 +200,7 @@ async function copy(text, btn, done) {
 let kind = Object.keys(IDEAS)[0];
 const checkedItems = new Set();
 const VIEWS = {
-  "Form": p => cards(DATA, p),
+  "Form": p => cards(merged(), p, true),
   "Job ideas": p => {
     p.append(el("p", "Stuck on which job to hand off? Pick your kind of work, then tap an idea. It copies a sentence to paste into the chat.", "note"));
     const chips = el("div", "", "chips");
@@ -202,19 +229,21 @@ const VIEWS = {
     TESTS.forEach(([name, what], i) => { const c = el("section", "", "card"); c.append(el("h2", (i + 1) + ". " + name), el("div", what)); p.append(c); });
   },
   "Agent file": p => {
-    const text = fileText(DATA), b = el("button", "Copy agent file");
+    const text = fileText(merged()), b = el("button", "Copy agent file");
     b.onclick = () => copy(text, b, "Copied");
     const tabs = el("div", "", "tabs"); tabs.append(b);
-    p.append(tabs, el("pre", text), el("p", "ChatGPT or Claude: create a Project and paste everything below the second --- line into the project instructions. Claude Code: save the whole file as .claude/agents/" + slug(DATA.name) + ".md", "note"));
+    p.append(tabs, el("pre", text), el("p", "ChatGPT or Claude: create a Project and paste everything below the second --- line into the project instructions. Claude Code: save the whole file as .claude/agents/" + slug(merged().name) + ".md", "note"));
   }
 };
 function show(name) {
   const n = Math.min(DATA.answered, TOTAL);
-  $("sub").textContent = n >= TOTAL ? "All five questions answered. Open the Agent file tab." : n + " of " + TOTAL + " questions answered. This fills in as you talk.";
+  $("sub").textContent = n >= TOTAL ? "All five questions answered. Open the Agent file tab." : n + " of " + TOTAL + " questions answered. This fills in as you talk. Click any box to type your own words.";
   $("bar").style.width = (n / TOTAL * 100) + "%";
+  current = name;
   const tabs = $("tabs"), p = $("panel"); tabs.textContent = ""; p.textContent = "";
   Object.keys(VIEWS).forEach(k => { const b = el("button", k); b.setAttribute("aria-pressed", String(k === name)); b.onclick = () => show(k); tabs.append(b); });
   VIEWS[name](p);
+  p.querySelectorAll("textarea.blank").forEach(grow);
 }
 show("Form");
 </script>
@@ -252,6 +281,7 @@ After each answer, update the same artifact or preview before replying. If the p
 - Set `"answered"` to the number of the last question you asked that I have answered. A question I answered only in part, before you asked it, does not count yet.
 - Sort what I say into the right fields, even when I say it out of order.
 - Rewrite my words to be short and specific. Use one idea for each list item, about 12 words or fewer. Use a maximum of six items in a list. Keep each text field to one sentence. Write instructions as commands, such as "List what is included."
+- I may type in the form boxes myself. The page keeps my edits when you update it, but you cannot see them. Change only the fields my latest answer covers. Never rewrite a field you already filled unless I ask you to correct it.
 - Use only what I told you. Do not invent prices, policies, names or steps. Leave a field empty until I give you something for it.
 
 What goes in each field:
@@ -281,7 +311,7 @@ What goes in each field:
 When all five questions are answered:
 
 1. Ask me one last question: "What do you want to call your agent?" Suggest the name in the form. Put my answer in `name` and update the form.
-2. Create my agent file as a file I can download. Name the file with the agent name in lowercase, with hyphens between words. If you cannot create files here, give me the same text in one copyable block and tell me the file name to save it as.
+2. Ask me: "Did you change anything in the form yourself?" If yes, tell me to open the **Agent file** tab and tap **Copy agent file**, because that text includes my edits, and skip the rest of this step. If no, create my agent file as a file I can download. Name the file with the agent name in lowercase, with hyphens between words. If you cannot create files here, give me the same text in one copyable block and tell me the file name to save it as.
    - In Claude, make a `.md` file, such as `quote-drafter.md`. Its text must match the form's **Agent file** tab exactly, so build it the way the page's `fileText` function does.
    - In ChatGPT or Codex, make a `.toml` file, such as `quote-drafter.toml`, in the Codex custom agent format below. Use the agent name in lowercase with underscores for `name`. Put the agent file body in `developer_instructions`: everything that the page's `fileText` function writes below the second `---` line. Leave out `model`, so the agent uses the session's model.
 
