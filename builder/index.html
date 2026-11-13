@@ -43,33 +43,16 @@
       line-height: .95; letter-spacing: -.055em; text-wrap: balance;
     }
     .lead { margin: 22px 0 44px; max-width: 34em; font-size: clamp(19px, 2.2vw, 23px); line-height: 1.45; color: var(--quiet); }
-    ol.steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 16px; counter-reset: step; }
-    .step {
-      counter-increment: step; display: grid; grid-template-columns: 44px 1fr; gap: 16px;
-      padding: 22px 22px 24px; border: 1px solid var(--line); border-radius: 22px;
-    }
-    .step::before {
-      content: counter(step); display: grid; place-items: center; width: 44px; height: 44px;
-      border-radius: 50%; background: var(--mint); font-size: 19px; font-weight: 760;
-    }
-    .step h2 { margin: 8px 0 6px; font-size: 22px; font-weight: 700; letter-spacing: -.02em; }
-    .step p { margin: 0 0 14px; font-size: 17px; line-height: 1.5; color: var(--quiet); }
-    .step p:last-child { margin-bottom: 0; }
+    .download h2 { margin: 0 0 6px; font-size: 22px; font-weight: 700; letter-spacing: -.02em; }
+    .download p { margin: 0 0 14px; font-size: 17px; line-height: 1.5; color: var(--quiet); }
     .button {
       display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px;
-      padding: 12px 22px; border: 1px solid var(--ink); border-radius: 999px;
+      padding: 12px 22px; border: 0; border-radius: 999px;
       background: var(--sulfur); color: var(--ink); text-decoration: none; font: inherit;
       font-size: 16px; font-weight: 760; white-space: nowrap; cursor: pointer;
     }
     .button:hover { color: var(--paper); background: var(--ink); }
-    .button--plain { background: var(--paper); }
     .nav-button { min-height: 44px; padding: 11px 17px; font-size: 14px; }
-    .line {
-      display: flex; flex-wrap: wrap; align-items: center; gap: 12px;
-      margin: 0 0 14px; padding: 14px 16px; border-radius: 14px; background: #f4f4f1;
-      font-size: 17px; font-weight: 600; color: var(--ink);
-    }
-    .line span { flex: 1 1 220px; }
     .after { margin: 40px 0 0; padding-top: 28px; border-top: 1px solid var(--line); }
     .after h2 { margin: 0 0 10px; font-size: 22px; letter-spacing: -.02em; }
     .after p { margin: 0 0 12px; font-size: 17px; line-height: 1.5; color: var(--quiet); }
@@ -78,8 +61,6 @@
       .site-nav { padding-left: 17px; }
       .wordmark { font-size: 18px; }
       main { padding-top: 112px; }
-      .step { grid-template-columns: 1fr; gap: 6px; padding: 20px; }
-      .step h2 { margin-top: 4px; }
       .button { width: 100%; }
       .nav-button { width: auto; }
     }
@@ -95,52 +76,18 @@
     <h1>Build your first AI agent in one chat.</h1>
     <p class="lead">Answer five questions about one job you do again and again. Watch your agent form fill in beside the chat. Leave with an agent file you can use.</p>
 
-    <ol class="steps">
-      <li class="step">
-        <div>
-          <h2>Download the file</h2>
-          <p>It holds the questions and the form. You don't need to open it.</p>
-          <a class="button" href="AI-Assistant-Builder.txt" download="AI-Assistant-Builder.txt">Download the file</a>
-        </div>
-      </li>
-      <li class="step">
-        <div>
-          <h2>Open a new Claude chat and attach it</h2>
-          <p>Tap <strong>+</strong> in the message box, then choose the file. On a phone, it is in your Downloads folder.</p>
-          <a class="button button--plain" href="https://claude.ai/new" target="_blank" rel="noopener">Open Claude</a>
-        </div>
-      </li>
-      <li class="step">
-        <div>
-          <h2>Send this line</h2>
-          <p class="line"><span id="starter">Run the AI Assistant Builder in the attached file.</span><button class="button button--plain" type="button" id="copy">Copy</button></p>
-          <p>Claude opens your form and asks the first question. Brain dump your answers. Messy is fine.</p>
-        </div>
-      </li>
-    </ol>
+    <section class="download" aria-label="Download the builder">
+      <h2>Download the file</h2>
+      <p>It holds the questions and the form. You don't need to open it.</p>
+      <a class="button" href="AI-Assistant-Builder.txt" download="AI-Assistant-Builder.txt">Download the file</a>
+    </section>
 
     <section class="after" aria-label="What you get">
       <h2>What you get</h2>
       <p>At the end, you name your agent and get its file, such as <strong>quote-drafter.md</strong>. The chat tells you where to put it.</p>
-      <p>Using ChatGPT? Attach the same file and send the same line. You get the questions in the chat and a <strong>.toml</strong> agent file for Codex.</p>
+      <p>Using ChatGPT? Attach the file in a new chat and ask it to run the AI Assistant Builder. You get the questions in the chat and a <strong>.toml</strong> agent file for Codex.</p>
       <p>Don't share passwords, card numbers, health details or private customer information in the chat.</p>
     </section>
   </main>
-  <script>
-    const copyButton = document.getElementById("copy");
-    copyButton.addEventListener("click", async () => {
-      const text = document.getElementById("starter").textContent;
-      try {
-        await navigator.clipboard.writeText(text);
-        copyButton.textContent = "Copied";
-      } catch (e) {
-        const range = document.createRange();
-        range.selectNodeContents(document.getElementById("starter"));
-        const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(range);
-        copyButton.textContent = "Selected. Copy it";
-      }
-      setTimeout(() => { copyButton.textContent = "Copy"; }, 2500);
-    });
-  </script>
 </body>
 </html>
