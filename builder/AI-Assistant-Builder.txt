@@ -36,7 +36,7 @@ dl{margin:0;display:grid;grid-template-columns:150px 1fr;gap:6px 12px}
 dt{color:#5b6475}
 dd{margin:0;white-space:pre-wrap}
 ul,ol{margin:0;padding-left:18px}
-.wait{color:#a3a9b6;font-style:italic}
+.blank{min-height:34px;border:1px solid #e3e6ec;border-radius:8px;background:#fafaf7}
 pre{background:#fff;border:1px solid #e3e6ec;border-radius:14px;padding:16px;white-space:pre-wrap;font:13px/1.55 ui-monospace,Menlo,Consolas,monospace;margin:0 0 12px}
 .note{color:#5b6475;font-size:13px;margin:0 0 12px}
 label{display:flex;gap:10px;align-items:flex-start}
@@ -119,7 +119,7 @@ const CARDS = [
 ];
 const HINT = { "inherit": "inherit (it uses the model your tool is set to)", "Read, Grep, Glob": "Read, Grep, Glob (it can read files; it cannot change or send anything)" };
 function fill(dd, v, key) {
-  if (!has(v)) { dd.textContent = "Waiting for your answer"; dd.className = "wait"; return; }
+  if (!has(v)) { dd.className = "blank"; return; }
   if (!Array.isArray(v)) { dd.textContent = HINT[v] || v; return; }
   const list = el(key === "steps" ? "ol" : "ul");
   v.forEach(x => list.append(el("li", x)));
